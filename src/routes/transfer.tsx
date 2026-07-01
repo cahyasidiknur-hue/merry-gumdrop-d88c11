@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { getServerUser } from '../lib/auth'
 import { getOrCreateAccount } from '../lib/account'
-import { doTransfer } from '../lib/transactions'
+import { doTransfer, lookupAccount } from '../lib/transactions'
 import { BankingLayout } from '../components/BankingLayout'
 import { useState } from 'react'
 import {
@@ -34,22 +34,14 @@ function formatRupiah(n: number) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 }
 
-const firstNames = ['BUDI', 'ANDI', 'SITI', 'RINA', 'DEWI', 'ADI', 'FAJAR', 'NINA', 'AGUS', 'YUNI', 'RIO', 'DIAN']
-const lastNames = ['SANTOSO', 'SAPUTRA', 'PRATAMA', 'MAHARANI', 'SETIAWAN', 'WIJAYA', 'HIDAYAT', 'PERMANA', 'NUGROHO', 'KUSUMA', 'PANGESTU', 'LESTARI']
-
-function generateDemoAccountName(accountNumber: string) {
-  let hash = 0
-  for (const c of accountNumber) hash += c.charCodeAt(0)
-  return `${firstNames[hash % firstNames.length]} ${lastNames[(hash * 7) % lastNames.length]}`
-}
-
 export default function TransferPage() {
   const { account } = Route.useLoaderData()
 
   const [toNumber, setToNumber] = useState('')
   const [resolvedName, setResolvedName] = useState('')
   const [lookupError, setLookupError] = useState('')
-const [amount, setAmount] = useState('')
+  const [lookupLoading, setLookupLoading] = useState(false)
+  const [amount, setAmount] = useState('')
   const [description, setDescription] = useState('')
 
   const [transferType, setTransferType] = useState<'internal' | 'interbank'>('internal')
@@ -64,10 +56,29 @@ const [amount, setAmount] = useState('')
   const quickAmounts = [50000, 100000, 250000, 500000, 1000000, 2000000]
   const fee = transferType === 'internal' ? 0 : method === 'bifast' ? 2500 : 6500
 
-  const handleLookup = () => {
+  const handleLookup = async () => {
     if (toNumber.length < 10) return
-    setResolvedName(generateDemoAccountName(toNumber))
+    setLookupLoading(true)
     setLookupError('')
+    setResolvedName('')
+    try {
+      const account = await lookupAccount({
+        data: {
+          accountNumber: toNumber,
+        },
+      })
+
+      if (!account) {
+        setLookupError('Nomor rekening tidak ditemukan')
+        return
+      }
+
+      setResolvedName(account.fullName)
+    } catch (err: any) {
+      setLookupError(err.message || 'Gagal mengecek nomor rekening')
+    } finally {
+      setLookupLoading(false)
+    }
   }
 
   const handleConfirm = async () => {
@@ -124,16 +135,16 @@ const [amount, setAmount] = useState('')
                 {transferType === 'internal' && (
                   <button
                     onClick={handleLookup}
-                    disabled={toNumber.length < 10}
+                    disabled={toNumber.length < 10 || lookupLoading}
                     style={{
                       background: 'rgba(0, 191, 165, 0.15)', border: '1px solid rgba(0, 191, 165, 0.3)',
                       borderRadius: 10, padding: '0 16px', cursor: 'pointer', color: '#00BFA5',
                       display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
-                      opacity: toNumber.length < 10 ? 0.5 : 1,
+                      opacity: toNumber.length < 10 || lookupLoading ? 0.5 : 1,
                     }}
                   >
                     <Search size={16} />
-                    Cek
+                    {lookupLoading ? 'Mengecek...' : 'Cek'}
                   </button>
                 )}
               </div>

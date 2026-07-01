@@ -5,7 +5,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { getUser, logout as nlLogout, onAuthChange, type User } from '@netlify/identity'
+import { getUser, logout as browserLogout, onAuthChange, type User } from '@netlify/identity'
 
 interface IdentityContextValue {
   user: User | null
@@ -20,20 +20,39 @@ export function IdentityProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    getUser().then((u) => {
-      setUser(u ?? null)
-      setReady(true)
-    })
+    fetch('/.netlify/functions/me', { headers: { Accept: 'application/json' } })
+      .then((response) => (response.ok ? getUser() : null))
+      .then((u) => {
+        setUser(u ?? null)
+        setReady(true)
+      })
+      .catch(() => {
+        setUser(null)
+        setReady(true)
+      })
 
-    const unsubscribe = onAuthChange((u) => {
+    const unsubscribe = onAuthChange((_event, u) => {
       setUser(u ?? null)
     })
 
     return unsubscribe
   }, [])
 
+  const logout = async () => {
+    const response = await fetch('/.netlify/functions/logout', {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+    })
+
+    if (!response.ok) {
+      await browserLogout()
+    }
+
+    setUser(null)
+  }
+
   return (
-    <IdentityContext.Provider value={{ user, ready, logout: nlLogout }}>
+    <IdentityContext.Provider value={{ user, ready, logout }}>
       {children}
     </IdentityContext.Provider>
   )
