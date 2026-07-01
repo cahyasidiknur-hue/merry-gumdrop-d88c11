@@ -32,7 +32,7 @@ function formatRupiah(n: number) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n)
 }
 
-function QrisCodeDisplay({ code, merchant }: { code: string; merchant: string }) {
+function QrisCodeDisplay({ code }: { code: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -240,7 +240,7 @@ export default function QrisPage() {
               boxShadow: '0 0 40px rgba(0, 191, 165, 0.2)',
             }}>
               <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 8 }}>
-                <QrisCodeDisplay code={activeMerchant.code} merchant={activeMerchant.name} />
+                <QrisCodeDisplay code={activeMerchant.code} />
               </div>
               <div style={{ marginTop: 12, color: '#1565C0', fontWeight: 700, fontSize: '0.85rem' }}>
                 {formatRupiah(Number(amount))}
