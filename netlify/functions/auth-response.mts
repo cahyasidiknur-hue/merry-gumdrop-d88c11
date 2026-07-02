@@ -49,18 +49,14 @@ export function userResponse(user: User, message: string): Response {
   return json({
     ok: true,
     message,
-    user: serializeUser(user),
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      emailVerified: Boolean(user.confirmedAt),
+      roles: user.roles ?? [],
+    },
   })
-}
-
-export function serializeUser(user: User) {
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    emailVerified: Boolean(user.confirmedAt),
-    roles: user.roles ?? [],
-  }
 }
 
 export function errorResponse(error: unknown): Response {
