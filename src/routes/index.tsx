@@ -1,5 +1,4 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { login, signup, AuthError } from '@netlify/identity'
 import { useIdentity } from '../lib/identity-context'
 import { useState, useEffect } from 'react'
 import { Landmark, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
@@ -32,22 +31,28 @@ function LoginPage() {
     setSuccess('')
     setLoading(true)
     try {
+      const response = await fetch(`/.netlify/functions/${mode === 'login' ? 'login' : 'register'}`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, fullName }),
+      })
+      const result = (await response.json()) as { ok?: boolean; error?: string; message?: string }
+
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || 'Terjadi kesalahan. Coba lagi.')
+      }
+
       if (mode === 'login') {
-        await login(email, password)
-        navigate({ to: '/dashboard' })
-      } else {
-        await signup(email, password, { full_name: fullName })
-        setSuccess('Pendaftaran berhasil! Cek email Anda untuk konfirmasi akun.')
+        window.location.href = '/dashboard'
+        return
       }
+
+      setSuccess(result.message || 'Pendaftaran berhasil! Cek email Anda untuk konfirmasi akun.')
     } catch (err) {
-      if (err instanceof AuthError) {
-        if (err.status === 401) setError('Email atau password salah.')
-        else if (err.status === 422) setError('Email tidak valid atau password terlalu lemah (min. 8 karakter).')
-        else if (err.status === 403) setError('Pendaftaran tidak diizinkan saat ini.')
-        else setError(err.message || 'Terjadi kesalahan. Coba lagi.')
-      } else {
-        setError('Terjadi kesalahan. Coba lagi.')
-      }
+      setError(err instanceof Error ? err.message : 'Terjadi kesalahan. Coba lagi.')
     } finally {
       setLoading(false)
     }

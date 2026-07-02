@@ -38,7 +38,6 @@ function formatDate(d: string | Date | null) {
 
 export default function ProfilePage() {
   const { account } = Route.useLoaderData()
-  const { user } = Route.useRouteContext()
 
   const [editing, setEditing] = useState(false)
   const [fullName, setFullName] = useState(account?.fullName || '')
