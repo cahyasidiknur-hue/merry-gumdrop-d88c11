@@ -1,4 +1,8 @@
-import { drizzle } from 'drizzle-orm/netlify-db'
-import * as schema from './schema.js'
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
 
-export const db = drizzle({ schema })
+const client = postgres(process.env.DATABASE_URL!, {
+    ssl: "require"
+});
+
+export const db = drizzle(client);
