@@ -12,7 +12,6 @@ export const getOrCreateAccount = createServerFn({ method: 'GET' })
   .middleware([requireAuthMiddleware])
   .handler(async ({ context }) => {
     const { user } = context
-    const email = user.email ?? ''
     const existing = await db
       .select()
       .from(bankAccounts)
@@ -26,8 +25,8 @@ export const getOrCreateAccount = createServerFn({ method: 'GET' })
       .values({
         identityUserId: user.id,
         accountNumber: generateAccountNumber(),
-        fullName: user.name || email.split('@')[0] || 'SIDIKBank User',
-        email,
+        fullName: user.name || user.email.split('@')[0],
+        email: user.email,
         balance: 50000000,
       })
       .returning()
@@ -37,8 +36,7 @@ export const getOrCreateAccount = createServerFn({ method: 'GET' })
 
 export const updateProfile = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((data: { fullName?: string; phone?: string }) => data)
-  .handler(async ({ context, data }) => {
+  .handler(async ({ context, data }: { context: any; data: { fullName?: string; phone?: string } }) => {
     const { user } = context
     const [account] = await db
       .update(bankAccounts)

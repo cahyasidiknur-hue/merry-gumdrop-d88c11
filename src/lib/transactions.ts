@@ -25,15 +25,17 @@ function detectFraud(amount: number, balance: number): { flagged: boolean; reaso
 
 export const doTransfer = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((data: {
-    toAccountNumber: string
-    amount: number
-    description: string
-    transferType: 'internal' | 'interbank'
-    bankCode: string
-    method: 'bifast' | 'rtol'
-  }) => data)
-  .handler(async ({ context, data }) => {
+  .handler(async ({ context, data }: {
+    context: any
+    data: {
+      toAccountNumber: string
+      amount: number
+      description: string
+      transferType: 'internal' | 'interbank'
+      bankCode: string
+      method: 'bifast' | 'rtol'
+    }
+  }) => {
     const { user } = context
 
     const [fromAccount] = await db
@@ -114,8 +116,7 @@ export const doTransfer = createServerFn({ method: 'POST' })
 
 export const doQrisPayment = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((data: { merchantName: string; amount: number; qrisCode: string }) => data)
-  .handler(async ({ context, data }) => {
+  .handler(async ({ context, data }: { context: any; data: { merchantName: string; amount: number; qrisCode: string } }) => {
     const { user } = context
 
     const [fromAccount] = await db
@@ -180,8 +181,7 @@ export const getTransactionHistory = createServerFn({ method: 'GET' })
 
 export const lookupAccount = createServerFn({ method: 'POST' })
   .middleware([requireAuthMiddleware])
-  .inputValidator((data: { accountNumber: string }) => data)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }: { data: { accountNumber: string } }) => {
     const [account] = await db
       .select({ fullName: bankAccounts.fullName, accountNumber: bankAccounts.accountNumber })
       .from(bankAccounts)
